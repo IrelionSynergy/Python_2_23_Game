@@ -2,6 +2,8 @@ from utils import randbool
 from utils import random_point
 from utils import random_cell
 
+TREE_BONUS = 100
+UPGRADE_COST = 1000
 CELL_TYPES = {
     'border': '⬛',
     'field': '🟩',
@@ -10,7 +12,9 @@ CELL_TYPES = {
     'repear': '🏥',
     'upgrade': '🔧',
     'fire': '🔥',
-    'helicopter': '🚁'
+    'helicopter': '🚁',
+    'tank': '🚰',
+    'score': '🏆'
 }
 
 class Map:
@@ -19,6 +23,10 @@ class Map:
         self.weidth = weidth
         self.higth = higth
         self.cells = [[CELL_TYPES.get('field') for i in range(weidth)] for j in range(higth)]
+        self.generate_forest(3, 10)
+        self.generate_river(20)
+        self.generate_river(10)
+        self.generate_upgrade_shop()
 
     def print_map(self, helicopter):
         print(CELL_TYPES.get('border') * (self.weidth + 2))
@@ -68,6 +76,12 @@ class Map:
                 self.cells[cell_x][cell_y] = CELL_TYPES.get('forest')
                 break
             tree_update += 1
+
+    def generate_upgrade_shop(self):
+        cell = random_point(self.weidth, self.higth)
+        cell_x, cell_y = cell[0], cell[1]
+        self.cells[cell_x][cell_y] = CELL_TYPES.get('upgrade')
+
     
     def add_fire(self):
         cell = random_point(self.weidth, self.higth)
@@ -83,3 +97,15 @@ class Map:
                     self.cells[row][cell] = CELL_TYPES.get('field')
         for i in range(10):
             self.add_fire()
+
+    def process_helicopter(self, helicopter):
+        helicopter_cell = self.cells[helicopter.get_x()][helicopter.get_y()]
+        if (helicopter_cell == CELL_TYPES.get('river')):
+            helicopter.tank = helicopter.maxtank
+        elif (helicopter_cell == CELL_TYPES.get('fire') and helicopter.tank > 0):
+             helicopter.tank -= 1
+             helicopter.score += TREE_BONUS
+             self.cells[helicopter.get_x()][helicopter.get_y()] = CELL_TYPES.get('forest')
+        if (helicopter_cell == CELL_TYPES.get('upgrade') and helicopter.score >= UPGRADE_COST):
+            helicopter.maxtank += 1
+            helicopter.score -= UPGRADE_COST
