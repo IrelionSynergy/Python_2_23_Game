@@ -3,7 +3,8 @@ from utils import random_point
 from utils import random_cell
 
 TREE_BONUS = 100
-UPGRADE_COST = 1000
+UPGRADE_COST = 500
+LIFE_COST = 10_000
 CELL_TYPES = {
     'border': '⬛',
     'field': '🟩',
@@ -13,8 +14,12 @@ CELL_TYPES = {
     'upgrade': '🔧',
     'fire': '🔥',
     'helicopter': '🚁',
-    'tank': '🚰',
-    'score': '🏆'
+    'tank': '🧺',
+    'score': '🏆',
+    'lives': '💗',
+    'hospital': '🏥',
+    'clouds': '⬜',
+    'lightning': '🟥'    
 }
 
 class Map:
@@ -27,14 +32,19 @@ class Map:
         self.generate_river(20)
         self.generate_river(10)
         self.generate_upgrade_shop()
+        self.generate_hospital()
 
-    def print_map(self, helicopter):
+    def print_map(self, helicopter, clouds):
         print(CELL_TYPES.get('border') * (self.weidth + 2))
         for ri in range(self.higth):
             print(CELL_TYPES.get('border'), end="")
             for ci in range(self.weidth):
                 cell = self.cells[ri][ci]
-                if (helicopter.x == ri and helicopter.y == ci):
+                if (clouds.cells[ri][ci] == CELL_TYPES.get('clouds')):
+                    print(CELL_TYPES.get('clouds'), end="")
+                elif (clouds.cells[ri][ci] == CELL_TYPES.get('lightning')):
+                    print(CELL_TYPES.get('lightning'), end="")
+                elif (helicopter.x == ri and helicopter.y == ci):
                     print(CELL_TYPES.get('helicopter'), end="")
                 else:
                     print(cell, end="")                
@@ -82,7 +92,14 @@ class Map:
         cell_x, cell_y = cell[0], cell[1]
         self.cells[cell_x][cell_y] = CELL_TYPES.get('upgrade')
 
-    
+    def generate_hospital(self):
+        cell = random_point(self.weidth, self.higth)
+        cell_x, cell_y = cell[0], cell[1]
+        if self.cells[cell_x][cell_y] != CELL_TYPES.get('upgrade'):
+            self.cells[cell_x][cell_y] = CELL_TYPES.get('hospital')
+        else:
+            self.generate_hospital()
+
     def add_fire(self):
         cell = random_point(self.weidth, self.higth)
         cell_x, cell_y = cell[0], cell[1]
@@ -98,14 +115,30 @@ class Map:
         for i in range(10):
             self.add_fire()
 
-    def process_helicopter(self, helicopter):
+    def process_helicopter(self, helicopter, clouds):
         helicopter_cell = self.cells[helicopter.get_x()][helicopter.get_y()]
+        cloud_cell = clouds.cells[helicopter.get_x()][helicopter.get_y()]
         if (helicopter_cell == CELL_TYPES.get('river')):
             helicopter.tank = helicopter.maxtank
         elif (helicopter_cell == CELL_TYPES.get('fire') and helicopter.tank > 0):
              helicopter.tank -= 1
              helicopter.score += TREE_BONUS
              self.cells[helicopter.get_x()][helicopter.get_y()] = CELL_TYPES.get('forest')
-        if (helicopter_cell == CELL_TYPES.get('upgrade') and helicopter.score >= UPGRADE_COST):
+        if (helicopter_cell == CELL_TYPES.get('upgrade') and helicopter.score >= UPGRADE_COST * helicopter.maxtank):
+            helicopter.score -= UPGRADE_COST * helicopter.maxtank
             helicopter.maxtank += 1
-            helicopter.score -= UPGRADE_COST
+        if (helicopter_cell == CELL_TYPES.get('hospital') and helicopter.score >= LIFE_COST):
+            helicopter.score -= LIFE_COST
+            helicopter.lives += 100
+        if cloud_cell == CELL_TYPES.get('lightning'):
+            helicopter.lives -= 1
+            if (helicopter.lives == 0):
+                helicopter.game_over()
+
+    def export_data(self):
+        return {
+            'cells': self.cells
+        }
+    
+    def import_data(self, data):
+        self.cells = data['cells'] or [[0 for i in range(self.weidth)] for j in range(self.higth)]                
