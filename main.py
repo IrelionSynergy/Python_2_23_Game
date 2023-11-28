@@ -62,6 +62,6 @@ while True:
     if(TICK % __TREE_UPDATE == 0):
         map.gererate_tree()
     if(TICK % __FIRE_UPDATE == 0):
-        map.update_fire()
+        map.update_fire(helicopter)
     if(TICK % __CLOUD_UPDATE == 0):
         clouds.update_clouds()

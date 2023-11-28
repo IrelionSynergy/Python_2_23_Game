@@ -3,6 +3,7 @@ from utils import random_point
 from utils import random_cell
 
 TREE_BONUS = 100
+TREE_LOST = 50
 UPGRADE_COST = 500
 LIFE_COST = 10_000
 CELL_TYPES = {
@@ -106,11 +107,12 @@ class Map:
         if self.cells[cell_x][cell_y] == CELL_TYPES.get('forest'):
             self.cells[cell_x][cell_y] = CELL_TYPES.get('fire')
 
-    def update_fire(self):
+    def update_fire(self, helicopter):
         for row in range(self.higth):
             for cell in range(self.weidth):
                 value = self.cells[row][cell]
                 if value == CELL_TYPES.get('fire'):
+                    helicopter.score -= TREE_LOST
                     self.cells[row][cell] = CELL_TYPES.get('field')
         for i in range(10):
             self.add_fire()
